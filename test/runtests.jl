@@ -1,71 +1,39 @@
-using HydroRefStations
-const HRS = HydroRefStations
+using SeasonalStreamflowForecasts
 
 using Test
-using Dates: Day
+using Dates: Date
 
-@testset "HRS.jl" begin
-    @testset "get_sites()" begin
-        sites, header = HRS.get_sites()
-
-        nrows, ncols = size(sites)
+@testset "SeasonalStreamflowForecasts" begin
+    ssf = SSF()
+    @testset "SSF()" begin
+        nrows, ncols = size(ssf.sites)
         @test nrows > 0 # At least one site.
         @test ncols > 0 # At least one column.
-        @test length(header) > 0 # At least one header line
-        @test header[end][1] != '#'
-        @test header[end][end] != '\"'
     end
 
-    @testset "get_data_types()" begin
-        data_types = HRS.get_data_types()
-        @test length(data_types) > 0 # At least one data type.
+    @testset "get_forecasts()" begin
+        site_ids = ["410730"]
+        fc_date = Date(2020,8,1)
+        for awrc_id in site_ids
+            data, header = get_forecasts(ssf, awrc_id, fc_date)
 
-        test_types = ["daily data", "december data", "spring anomaly",
-                      "cease to flow", "annual data"]
+            local nrows, ncols = size(data)
+            @test nrows > 0 # At least one data point.
+            @test ncols > 0 # At least one column.
 
-        for test_type in test_types
-            @test test_type in data_types
+            @test length(header) > 0 # At least one header line
         end
-
-        data_types = HRS.get_data_types("year")
-        @test "annual data" in data_types
-        @test "11 year moving average" in data_types
-        @test "seasonal data" ∉ data_types
-
-        data_types = HRS.get_data_types("month")
-        @test "monthly data" in data_types
-        @test "monthly boxplot" in data_types
-        @test "daily data" ∉ data_types
-        @test "seasonal data" ∉ data_types
-
-        @test_throws ArgumentError HRS.get_data_types("invalid")
+        data, header = get_forecasts(ssf, "invalid ID", fc_date)
+        @test isempty(data)
+        @test isempty(header)
     end
-
-    @testset "get_data()" begin
-        awrc_ids = ["410730", "114001A"]
-        data_types = ["monthly data", "seasonal data"]
-        for awrc_id in awrc_ids
-            for data_type in data_types
-                data, header = HRS.get_data(awrc_id, data_type)
-
-                local nrows, ncols = size(data)
-                @test nrows > 0 # At least one data point.
-                @test ncols > 0 # At least one column.
-
-                @test length(header) > 0 # At least one header line
-                @test header[end][1] != '#'
-                @test header[end][end] != '\"'
-                if data_type == "monthly data"
-                    # Ignore the first and last 12 months in a case of incomplete dataset.
-                    @test maximum(diff(data[!,"Start Date"][13:end-12])) <= Day(31)
-                    @test minimum(diff(data[!,"Start Date"][13:end-12])) >= Day(28)
-                end
-                if data_type == "seasonal data"
-                    @test maximum(diff(data[!,"Start Date"][5:end-4])) <= Day(92)
-                    @test minimum(diff(data[!,"Start Date"][5:end-4])) >= Day(89)
-                end
-            end
-            @test_throws ArgumentError HRS.get_data(awrc_id, "invalid data type")
-        end
+    @testset "show()" begin
+        show_str = repr(ssf)
+        @test occursin("ID", show_str)
+        @test occursin("AWRC", show_str)
+    end
+    @testset "close()" begin
+        close!(ssf)
+        @test isempty(ssf.sites)
     end
 end
