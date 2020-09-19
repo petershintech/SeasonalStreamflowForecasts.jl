@@ -2,7 +2,7 @@ module SeasonalStreamflowForecasts
 
 import Base.show
 import HTTP
-import CSV
+using CSV: File
 using JSON
 using DataFrames: DataFrame, select!
 using Dates: Date, year, month
@@ -98,7 +98,7 @@ function get_forecasts(ssf::SSF,
 	new_header = prune_header(header, HEADER_DELIM)
 
 	body_buf = seek(body_buf, 0)
-	data = CSV.read(body_buf, comment=HEADER_DELIM)
+	data = DataFrame(File(body_buf, comment=HEADER_DELIM))
 
 	return data, new_header
 end
