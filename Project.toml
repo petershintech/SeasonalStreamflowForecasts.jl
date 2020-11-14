@@ -12,7 +12,7 @@ JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [compat]
-CSV = "0.7"
+CSV = "0.7, 0.8"
 DataFrames = "0.21"
 HTTP = "0.8"
 JSON = "0.21"
